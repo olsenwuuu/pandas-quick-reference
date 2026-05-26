@@ -58,11 +58,11 @@ Once a DataFrame is loaded, use these quick helper methods to inspect the shape 
 | **`df.info()`** | Prints a concise summary including column data types and memory usage. | `df.info()` |
 | **`df.columns`**| Returns an index list of all column headers. | `df.columns` |
 
+---
+
 ## 🎯 Data Selection: `.loc` vs `.iloc`
 
 Pandas uses two primary properties to slice and dice DataFrames. The golden rule to remember is: **`.loc` uses labels (text), while `.iloc` uses integer positions (numbers).**
-
----
 
 ### 🔍 `.loc` (Label-Based Selection)
 Use `.loc` when you want to look up data by the row or column names/labels. 
@@ -99,7 +99,6 @@ df.iloc[0:3, 0:2]
 # Grab the very last row using negative indexing
 df.iloc[-1]
 ```
-
 ### ⚡ Quick Reference Comparison
 
 | Feature | `.loc` | `.iloc` |
@@ -107,3 +106,54 @@ df.iloc[-1]
 | **Lookup Type** | **Labels / Names** (Strings or numbers if index is explicit) | **Integer Positions** (Always numbers `0, 1, 2...`) |
 | **Slicing Behavior** | **Includes** the stop point (`'A':'C'` includes C) | **Excludes** the stop point (`0:3` only gets 0, 1, 2) |
 | **Common Use Case** | Filtering data by explicit index keys or column titles. | Slicing specific matrix chunks when column names don't matter. |
+
+---
+
+## ⚡ Fast Scalar Selection: `.at` vs `.iat`
+
+When you only need to get or set a **single value** in a DataFrame, Pandas provides `.at` and `.iat`. Because they don't have the overhead of handling entire rows or slices, they are significantly faster than `.loc` or `.iloc`.
+
+The same naming rule applies: **`.at` uses labels, while `.iat` uses integer positions.**
+
+
+### 🔍 `.at` (Label-Based Single Value)
+Use `.at` when you want to access a single cell using its row name and column name.
+
+**Syntax:** `df.at[row_label, column_label]`
+
+#### Examples:
+```python
+# Look up a specific value by row and column name
+price = df.at['row_three', 'Price']
+
+# Instantly update/change a single value
+df.at['row_three', 'Price'] = 19.99
+```
+---
+## 📊 Sorting Data: `.sort_values()`
+
+To reorder your DataFrame based on the values of one or more columns, Pandas uses the `.sort_values()` method. By default, it sorts data in **ascending** order (smallest to largest / A to Z).
+
+---
+
+### 1. Sorting by a Single Column
+To sort by just one column, pass the column name as a string.
+
+```python
+# Sort rows by price from cheapest to most expensive (Ascending)
+df_sorted = df.sort_values('Price')
+
+# Sort rows from highest score to lowest score (Descending)
+df_sorted = df.sort_values('Score', ascending=False)
+```
+### 2. Sorting by Multiple Columns
+To sort by multiple criteria, pass a list of column names. Pandas will sort by the first column listed, and then use the second column to break any ties.
+```python
+# Sort by Category alphabetically, then by Price from lowest to highest
+df_sorted = df.sort_values(['Category', 'Price'])
+
+# Sort by Category alphabetically, BUT sort Price from highest to lowest
+# (Pass a list of booleans to the ascending parameter matching your column list)
+df_sorted = df.sort_values(['Category', 'Price'], ascending=[True, False])
+```
+
