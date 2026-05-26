@@ -57,3 +57,53 @@ Once a DataFrame is loaded, use these quick helper methods to inspect the shape 
 | **`df.shape`** | Returns a tuple representing the dimensionality `(rows, columns)`. | `df.shape` |
 | **`df.info()`** | Prints a concise summary including column data types and memory usage. | `df.info()` |
 | **`df.columns`**| Returns an index list of all column headers. | `df.columns` |
+
+## 🎯 Data Selection: `.loc` vs `.iloc`
+
+Pandas uses two primary properties to slice and dice DataFrames. The golden rule to remember is: **`.loc` uses labels (text), while `.iloc` uses integer positions (numbers).**
+
+---
+
+### 🔍 `.loc` (Label-Based Selection)
+Use `.loc` when you want to look up data by the row or column names/labels. 
+
+**Syntax:** `df.loc[row_label, column_label]`
+
+
+
+#### Examples:
+```python
+# Select a single row by its index label
+df.loc['row_three']
+
+# Select specific rows and specific columns by name
+df.loc[['row_one', 'row_two'], ['Product', 'Price']]
+
+# Slice rows from 'A' to 'C' (Note: In .loc, the stop point 'C' IS included!)
+df.loc['A':'C', 'Price']
+```
+
+### 🔢 .iloc (Integer Position-Based Selection)
+Use .iloc when you want to look up data by its raw physical position or index number, ignoring whatever text label it might have (exactly like slicing a native Python list).
+
+Syntax: df.iloc[row_position, column_position]
+
+```python
+# Select the very first row (index 0)
+df.iloc[0]
+
+# Select the first 3 rows and the first 2 columns
+# (Note: In .iloc, standard Python slicing applies—the stop index is EXCLUDED!)
+df.iloc[0:3, 0:2]
+
+# Grab the very last row using negative indexing
+df.iloc[-1]
+```
+
+### ⚡ Quick Reference Comparison
+
+| Feature | `.loc` | `.iloc` |
+| :--- | :--- | :--- |
+| **Lookup Type** | **Labels / Names** (Strings or numbers if index is explicit) | **Integer Positions** (Always numbers `0, 1, 2...`) |
+| **Slicing Behavior** | **Includes** the stop point (`'A':'C'` includes C) | **Excludes** the stop point (`0:3` only gets 0, 1, 2) |
+| **Common Use Case** | Filtering data by explicit index keys or column titles. | Slicing specific matrix chunks when column names don't matter. |
