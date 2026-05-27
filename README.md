@@ -134,8 +134,6 @@ df.at['row_three', 'Price'] = 19.99
 
 To reorder your DataFrame based on the values of one or more columns, Pandas uses the `.sort_values()` method. By default, it sorts data in **ascending** order (smallest to largest / A to Z).
 
----
-
 ### 1. Sorting by a Single Column
 To sort by just one column, pass the column name as a string.
 
@@ -192,8 +190,6 @@ df = pd.read_csv("C:/Users/name/Documents/new_data/test_file.csv")
 
 The `.query()` method allows you to filter a DataFrame using a concise, readable text string. It looks and feels very similar to writing a standard SQL `WHERE` clause, making it a favorite for analysts transitioning from SQL to Python.
 
----
-
 ### 1. Basic Filtering (SQL-Style)
 Instead of repeating the DataFrame name like `df[df['column'] > value]`, you write the condition directly inside a string.
 
@@ -232,8 +228,6 @@ high_earners = df.query("Salary >= @target_salary")
 ## 🗑️ Removing Data: `.drop()`
 
 The `.drop()` method allows you to remove rows or columns from a DataFrame. By default, Pandas assumes you want to drop **rows** unless you explicitly tell it to look at **columns** using the `axis` parameter.
-
----
 
 ### 1. Removing Columns
 To drop columns, pass the column name (or a list of names) and specify `axis=1` (or `axis='columns'`).
@@ -356,8 +350,6 @@ Even if your column is full of integers (like [10, 20, 30]), the moment you intr
 ## 🔍 Detecting Missing Data: `.isna()` (and `.isnull()`)
 
 The `.isna()` method scans your DataFrame and returns a matching table of boolean values (`True` or `False`). Every cell that contains a missing value (`NaN`, `None`) becomes `True`, and every valid cell becomes `False`.
-
----
 
 ### 1. Spotting Nulls Across the Whole Table
 Running `.isna()` by itself on a large DataFrame creates a wall of `True`/`False` text, which isn't very helpful. Instead, data analysts chain it with `.sum()` to instantly see a breakdown of exactly how many missing values exist in each column.
@@ -512,8 +504,6 @@ dtype: int64
 
 The `.groupby()` method allows you to group rows of data together based on one or more columns and run mathematical aggregations (like sum, mean, or count) on them. It mirrors the exact structural logic of a SQL `GROUP BY` statement.
 
----
-
 ### 🧱 The Split-Apply-Combine Workflow
 When you run a `.groupby()`, Pandas executes three distinct operations under the hood:
 1. **Split**: Separates the DataFrame into distinct mini-tables based on the column values you specified.
@@ -580,3 +570,103 @@ coffee_summary = df.groupby('Coffee Type').agg(
 | :--- | :---: | :---: | :---: |
 | **Espresso** | 740 | $3.50 | 210 |
 | **Latte** | 610 | $4.75 | 145 |
+
+---
+
+## 🕒 Time-Shifting Data: `.shift()`
+
+The `.shift()` method moves your data rows up or down by a specified number of periods. This is the absolute go-to tool for time-series analysis, allowing you to compare a current row's value to a previous row's value (e.g., calculating Month-over-Month growth).
+
+### 1. Lagging Data (Looking Backward)
+By default, passing a positive integer shifts the data **down**, creating a lag. This positions yesterday's data right next to today's data.
+
+```python
+# Create a new column containing the previous row's sales data
+df['Previous_Month_Sales'] = df['Units Sold'].shift(1)
+
+# Calculate Month-over-Month absolute growth
+df['MoM_Growth'] = df['Units Sold'] - df['Previous_Month_Sales']
+```
+### 2. Leading Data (Looking Forward)
+Passing a negative integer shifts the data up, pulling future rows into the current row's view.
+```python
+# Pull next month's price into the current row
+df['Next_Month_Price'] = df['Price'].shift(-1)
+```
+### 3. Shifting within Categories (.groupby)
+If your dataset contains multiple different categories (like different coffee shops), running a global .shift() will accidentally bleed data across distinct groups. Combine .shift() with .groupby() to isolate the movement within each group cleanly.
+```python
+# Shift rows safely within each individual Coffee Type
+df['Prev_Sales'] = df.groupby('Coffee Type')['Units Sold'].shift(1)
+```
+---
+## 🏅 Ordering Data: `.rank()`
+
+The `.rank()` method assigns a numerical rank (1 through $N$) to the entries in a column. Unlike `.sort_values()`, which reorders your entire table, `.rank()` preserves your row structure and simply tells you where each row stands relative to the rest.
+
+### 1. Basic Ranking
+By default, `.rank()` assigns the number 1 to the *smallest* value (ascending). For business performance metrics (like sales or revenue), you usually want the *largest* value to be rank 1, which requires setting `ascending=False`.
+
+```python
+# Rank products by Units Sold, where the top seller is #1
+df['Sales_Rank'] = df['Units Sold'].rank(ascending=False)
+```
+### 2. Handling Ties (method)
+When two rows have the exact same value, Pandas needs to know how to break the tie. You control this using the method parameter:
+### 🏅 `.rank()` Tie-Breaking Methods (`method=`)
+| Method | Tie-Breaking Logic | Example Result for a Tie |
+| :--- | :--- | :---: |
+| **`'average'`** *(Default)* | Assigns the mathematical average rank of the tied group. | `[1, 2.5, 2.5, 4]` |
+| **`'min'`** | Assigns the lowest rank to all tied rows (Matches SQL `RANK()`). | `[1, 2, 2, 4]` |
+| **`'max'`** | Assigns the highest rank to all tied rows. | `[1, 3, 3, 4]` |
+| **`'first'`** | Ranks based strictly on the order of appearance in the dataset. | `[1, 2, 3, 4]` |
+| **`'dense'`** | Like `min`, but the next rank after a tie is always incremented by exactly +1 (Matches SQL `DENSE_RANK()`). | `[1, 2, 2, 3]` |
+
+```python
+# Rank sales using standard SQL-style tie-breaking
+df['Dense_Rank'] = df['Units Sold'].rank(method='dense', ascending=False)
+```
+---
+## 🔄 Moving Window Calculations: `.rolling()`
+
+The `.rolling()` method creates a sliding window of a specific size over your data rows. It is primarily used to calculate **Moving Averages**, which smooth out noisy, short-term fluctuations to reveal long-term trends.
+
+### 1. Calculating a Simple Moving Average (SMA)
+To build a rolling calculation, specify your window size (number of rows) and chain an aggregation function like `.mean()` or `.sum()`.
+
+```python
+# Calculate a 7-day rolling average of units sold
+df['7_Day_Avg_Sales'] = df['Units Sold'].rolling(window=7).mean()
+```
+### 2. Overriding the Minimum Sample Constraint (min_periods)
+If you want to start calculating averages immediately without waiting for the window to fill up completely, use the min_periods parameter.
+```python
+# Calculate a 7-day average, but output a value even if only 1 day of data is available
+df['7_Day_Avg_Sales'] = df['Units Sold'].rolling(window=7, min_periods=1).mean()
+```
+---
+## 🪣 Running Totals: `.cumsum()`
+
+The `.cumsum()` method (Cumulative Sum) tracks a running total of a numeric column from the very first row down to the last. This is the cornerstone metric for tracking pacing, monthly performance-to-target metrics, and lifetime customer values.
+
+### 1. Global Running Total
+Running `.cumsum()` by itself accumulates values continuously down through your entire dataset.
+
+```python
+# Create a continuous running total of all revenue generated over time
+df['Lifetime_Revenue'] = df['Revenue'].cumsum()
+```
+### 2. Segmented Running Totals (.groupby)
+In standard business reporting, you rarely want a flat running total across all categories combined. You typically need to reset the running total for each specific segment (e.g., tracking month-to-date sales for individual stores or tracking cumulative spend per distinct user).
+```python
+# Track the cumulative revenue growth isolated for each distinct Coffee Type
+df['Cumulative_Type_Revenue'] = df.groupby('Coffee Type')['Revenue'].cumsum()
+```
+### ☕ Segmented Running Total Output (`.groupby + .cumsum`)
+
+| Date | Coffee Type | Revenue | Cumulative_Type_Revenue |
+| :--- | :--- | :---: | :--- |
+| 2026-05-01 | **Espresso** | $100 | **$100** |
+| 2026-05-01 | **Latte** | $150 | **$150** |
+| 2026-05-02 | **Espresso** | $120 | **$220** *(100 + 120)* |
+| 2026-05-02 | **Latte** | $130 | **$280** *(150 + 130)* |
