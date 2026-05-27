@@ -257,3 +257,176 @@ df_cleaned = df.drop('row_one')
 # Drop multiple rows using a list of index labels
 df_cleaned = df.drop([0, 1, 4]) # Useful if your index is numeric
 ```
+## 🤝 Combining Data: `.merge()` (SQL Joins in Pandas)
+
+If you know SQL, this behaves exactly like an `INNER JOIN`, `LEFT JOIN`, `RIGHT JOIN`, or `FULL OUTER JOIN`. The `.merge()` method is used to link two DataFrames together based on a shared "key" column or index. 
+
+---
+
+### 1. Basic Syntax
+By default, if you don't specify the type of join, Pandas will execute an **inner join** (only keeping rows where the key matches in *both* tables).
+
+```python
+# Merge df1 and df2 using a shared column named 'customer_id'
+df_combined = df1.merge(df2, on='customer_id')
+```
+### 2. Handling Different Column Names
+If the linking columns are named differently in each table (e.g., user_id in the left table and customer_id in the right table), use left_on and right_on.
+```python
+df_combined = df1.merge(df2, left_on='user_id', right_on='customer_id')
+```
+### 3. Choosing Your Join Type (how)
+You can control how unmatched rows are treated using the how parameter:
+
+- how='inner' (Default): Keeps only the keys that exist in both DataFrames.
+
+- how='left': Keeps all rows from the left DataFrame, and matches values from the right. Unmatched rows from the right get filled with NaN.
+
+- how='right': Keeps all rows from the right DataFrame, and matches values from the left.
+
+- how='outer': Keeps all rows from both DataFrames, filling in NaN wherever a match is missing.
+```python
+# Keep all records from the left table, even if they don't match the right table
+df_left_joined = df1.merge(df2, on='customer_id', how='left')
+```
+#### ⚠️ Useful Parameters to Know
+- suffixes: If both DataFrames have columns with the same name that you aren't joining on (like Created_At in both tables), Pandas will automatically append _x and _y to distinguish them. You can customize this by passing a tuple to suffixes.
+
+- indicator: Setting indicator=True adds a special column named _merge to the output table that tells you exactly where that row came from (both, left_only, or right_only). Highly useful for data auditing!
+```python
+# Merge with custom suffixes and turn on the tracking indicator
+df_final = df1.merge(
+    df2, 
+    on='product_id', 
+    how='outer', 
+    suffixes=('_monthly', '_yearly'),
+    indicator=True
+)
+```
+### ⚡ Quick SQL-to-Pandas Translation Cheat Sheet
+
+| SQL Operation | Pandas `.merge()` Equivalent |
+| :--- | :--- |
+| `FROM table_a INNER JOIN table_b ON a.id = b.id` | `table_a.merge(table_b, on='id', how='inner')` |
+| `FROM table_a LEFT JOIN table_b ON a.id = b.id` | `table_a.merge(table_b, on='id', how='left')` |
+| `FROM table_a RIGHT JOIN table_b ON a.id = b.id` | `table_a.merge(table_b, on='id', how='right')` |
+| `FROM table_a FULL OUTER JOIN table_b ON a.id1 = b.id2` | `table_a.merge(table_b, left_on='id1', right_on='id2', how='outer')` |
+
+---
+
+## ⛓️ Combining Data: `.concat()` (Concatenation)
+
+The `pd.concat()` function is used to append DataFrames together along an axis. Think of it as either stacking rows on top of each other (like a SQL `UNION ALL`) or gluing columns together side-by-side. 
+
+Unlike `.merge()`, which looks for matching values in columns, `.concat()` just blindly glues tables together based on their index positions or column names.
+
+### 1. Stacking Rows (Default: `axis=0`)
+Use this when you have multiple tables with the exact same columns and you want to combine them into one long dataset. 
+
+```python
+# Combine USA and GBR dataframes into one single table
+# (Pass the DataFrames as a list inside the function)
+combined_rows = pd.concat([usa, gbr])
+```
+
+### 2. Gluing Columns Side-by-Side (axis=1)
+Use this when you have tables representing the exact same rows/subjects, but containing completely different columns of information.
+```python
+# Glue columns from df_demographics and df_financials side-by-side
+combined_cols = pd.concat([df_demographics, df_financials], axis=1)
+```
+---
+## 🧊 Missing Data: `np.nan` (Not a Number)
+
+In Python and Pandas, `np.nan` stands for **Not a Number**. It comes from the NumPy library (`import numpy as np`) and is the standard data sentinel value used to represent **missing, null, or blank data** in a dataset.
+
+### 1. How to Create or Inject Missing Data
+You will often use `np.nan` when you need to manually wipe out bad data or simulate a dataset with missing values for testing.
+
+```python
+import numpy as np
+import pandas as pd
+
+# Intentionally blank out the first two rows of 'Units Sold'
+df.loc[[0, 1], 'Units Sold'] = np.nan
+```
+#### ⚠️ It is secretly a float!
+Even if your column is full of integers (like [10, 20, 30]), the moment you introduce a single np.nan, Pandas will automatically convert the entire column into decimal floats ([10.0, 20.0, NaN]). This is because Python's core engine natively treats NaN as a floating-point data type.
+---
+## 🔍 Detecting Missing Data: `.isna()` (and `.isnull()`)
+
+The `.isna()` method scans your DataFrame and returns a matching table of boolean values (`True` or `False`). Every cell that contains a missing value (`NaN`, `None`) becomes `True`, and every valid cell becomes `False`.
+
+---
+
+### 1. Spotting Nulls Across the Whole Table
+Running `.isna()` by itself on a large DataFrame creates a wall of `True`/`False` text, which isn't very helpful. Instead, data analysts chain it with `.sum()` to instantly see a breakdown of exactly how many missing values exist in each column.
+
+```python
+# Returns a clean list of columns and the total number of missing entries in each
+df.isna().sum()
+```
+Example Output
+```python
+Product Name     0
+Units Sold      14
+Price            2
+dtype: int64
+```
+---
+## 🩹 Imputing Data: `.fillna()`
+
+The `.fillna()` method replaces missing `NaN` values with a static value or a calculated statistic (like a mean, median, or mode) that you specify. 
+
+### 1. Replacing with a Constant Value
+This is commonly used to replace missing numeric data with a baseline like `0`, or missing categorical data with a placeholder string like `'Unknown'`.
+
+```python
+# Replace all NaN values in 'Units Sold' with 0
+df['Units Sold'] = df['Units Sold'].fillna(0)
+
+# Replace missing strings with a fallback label
+df['Status'] = df['Status'].fillna('Missing_Data')
+```
+### 2. Replacing with a Calculated Metric (Imputation)
+Instead of a hardcoded number, you can dynamically calculate a statistic from the column itself and use it to fill the blanks.
+```python
+# Calculate the average salary of the dataset
+mean_salary = df['Salary'].mean()
+
+# Fill missing salaries with that exact average
+df['Salary'] = df['Salary'].fillna(mean_salary)
+```
+### 3. Forward Fill (ffill) and Backward Fill (bfill)
+You can direct Pandas to look at adjacent rows to fill a gap. This is incredibly useful for sorted sequential or time-series data.
+- method='ffill' (Forward Fill): Carries the last known valid value forward to fill subsequent gaps.
+- method='bfill' (Backward Fill): Looks ahead and pulls the next valid value backward to fill gaps.
+```python
+# Carry the previous day's closing stock price forward to fill a missing day
+df['Closing_Price'] = df['Closing_Price'].fillna(method='ffill')
+```
+---
+
+markdown
+## 📈 Estimating Continuous Gaps: `.interpolate()`
+
+The `.interpolate()` method is an advanced mathematical tool used to fill `NaN` values by estimating them based on the surrounding data points. Instead of filling blanks with a single static number, it draws a logical mathematical bridge between the last known number and the next known number.
+
+### 1. Linear Interpolation (Default)
+By default, `.interpolate()` treats your data points as a straight line and calculates an equal mathematical stepping stone across the missing index gaps. 
+
+Imagine your data sequence goes: `10`, `NaN`, `NaN`, `40`. Linear interpolation calculates the missing steps automatically:
+
+```python
+# Sample sequence: [10.0, NaN, NaN, 40.0]
+df['Temperature'] = df['Temperature'].interpolate()
+
+# Resulting sequence: [10.0, 20.0, 30.0, 40.0]
+```
+### ⚡ Data Imputation Strategy: `.fillna()` vs. `.interpolate()`
+
+| Scenario | Best Method | Why? |
+| :--- | :--- | :--- |
+| **Missing Categorical Data**<br>*(e.g., Country, Color, Job Title)* | `.fillna('Unknown')` | You cannot mathematically calculate a trend or midpoint between descriptive text categories like "USA" and "GBR". |
+| **Baseline Resetting**<br>*(e.g., No transactions or units sold)* | `.fillna(0)` | If an event didn't occur (like a store making zero sales), the value is an absolute structural 0, not a calculated trend. |
+| **Time-Series / Sensor Data**<br>*(e.g., Hourly temperatures, Stock prices)* | `.interpolate()` | Gaps are sequential. If a sensor cuts out at 2:00 PM (70°F) and resumes at 4:00 PM (74°F), estimating 3:00 PM as 72°F is highly accurate. |
