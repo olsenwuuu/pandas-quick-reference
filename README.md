@@ -156,4 +156,104 @@ df_sorted = df.sort_values(['Category', 'Price'])
 # (Pass a list of booleans to the ascending parameter matching your column list)
 df_sorted = df.sort_values(['Category', 'Price'], ascending=[True, False])
 ```
+---
+## 🧵 Python Raw Strings (`r"..."`)
 
+In standard Python strings, the backslash (`\`) is an **escape character** used to introduce special commands (like `\n` for a new line or `\t` for a tab). 
+
+A **Raw String** tells Python to completely ignore all escape characters and treat every single backslash as a literal, regular character. You create one by simply putting an `r` right before the opening quote.
+
+### ⚠️ The Problem: Standard Strings on Windows
+Windows file paths use backslashes. If you try to pass a standard path to Pandas, it will often break because Python misinterprets the path characters.
+
+```python
+# ❌ THIS WILL ERROR or behave weirdly:
+# Python sees '\n' and thinks you want a new line, and sees '\t' and thinks you want a tab!
+df = pd.read_csv("C:\Users\name\Documents\new_data\test_file.csv")
+```
+The Solution: The r Prefix
+Adding an r forces Python to read the path exactly as it is written.
+```python
+#  THIS WORKS PERFECTLY:
+# The 'r' tells Python: "Treat this entire string as raw text. No escape character magic."
+df = pd.read_csv(r"C:\Users\name\Documents\new_data\test_file.csv")
+```
+💡 Alternative Solutions (If you don't use an r-string)
+If you ever forget the r, you have to modify the path manually using one of these two methods:
+```python
+df = pd.read_csv("C:\\Users\\name\\Documents\\new_data\\test_file.csv")
+```
+Forward Slashes: Switch all backslashes to forward slashes (Unix/Mac style), which Python natively accepts on all systems.
+```python
+df = pd.read_csv("C:/Users/name/Documents/new_data/test_file.csv")
+```
+---
+## 🔍 Filtering Data: `.query()`
+
+The `.query()` method allows you to filter a DataFrame using a concise, readable text string. It looks and feels very similar to writing a standard SQL `WHERE` clause, making it a favorite for analysts transitioning from SQL to Python.
+
+---
+
+### 1. Basic Filtering (SQL-Style)
+Instead of repeating the DataFrame name like `df[df['column'] > value]`, you write the condition directly inside a string.
+
+```python
+# Traditional Pandas syntax (bulky):
+df[df['Age'] > 30]
+
+# Clean .query() syntax:
+df.query("Age > 30")
+
+# Check for text equality (Note the use of different quotes inside/outside)
+df.query("Category == 'Electronics'")
+```
+### 2. Combining Multiple Conditions (and, or, not)
+You can chain multiple conditions together using natural English words (and, or, not) or standard logical operators (&, |, ~).
+```python
+# Filter using 'and' / '&'
+df.query("Age > 25 and Status == 'Active'")
+
+# Filter using 'or' / '|'
+df.query("Category == 'Books' or Price < 10.00")
+
+# Filter using 'not' or checking membership with 'in'
+df.query("Country in ['US', 'CA', 'MX'] and not Brand == 'Generic'")
+```
+### 3. Referencing Python Variables using the @ Symbol
+If you want to use a dynamic variable you defined earlier in your Python code inside your query string, prefix the variable name with the @ symbol.
+```python
+# Define a local Python variable
+target_salary = 95000
+
+# Reference it inside the query using @
+high_earners = df.query("Salary >= @target_salary")
+```
+---
+## 🗑️ Removing Data: `.drop()`
+
+The `.drop()` method allows you to remove rows or columns from a DataFrame. By default, Pandas assumes you want to drop **rows** unless you explicitly tell it to look at **columns** using the `axis` parameter.
+
+---
+
+### 1. Removing Columns
+To drop columns, pass the column name (or a list of names) and specify `axis=1` (or `axis='columns'`).
+
+```python
+# Drop a single column
+df_cleaned = df.drop('Unnecessary_ID', axis=1)
+
+# Drop multiple columns at once using a list
+df_cleaned = df.drop(['Created_At', 'Thumbnail_Url', 'Internal_Notes'], axis=1)
+
+# Alternative modern syntax (explicitly naming columns, no axis needed)
+df_cleaned = df.drop(columns=['Created_At', 'Thumbnail_Url'])
+```
+### 2. Removing Rows
+To drop rows, pass the row index labels. By default, axis=0 (rows), so you don't strictly need to type the axis parameter.
+```python
+# Drop a single row by its index label
+df_cleaned = df.drop('row_one')
+
+# Drop multiple rows using a list of index labels
+df_cleaned = df.drop([0, 1, 4]) # Useful if your index is numeric
+```
