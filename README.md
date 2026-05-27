@@ -430,3 +430,153 @@ df['Temperature'] = df['Temperature'].interpolate()
 | **Missing Categorical Data**<br>*(e.g., Country, Color, Job Title)* | `.fillna('Unknown')` | You cannot mathematically calculate a trend or midpoint between descriptive text categories like "USA" and "GBR". |
 | **Baseline Resetting**<br>*(e.g., No transactions or units sold)* | `.fillna(0)` | If an event didn't occur (like a store making zero sales), the value is an absolute structural 0, not a calculated trend. |
 | **Time-Series / Sensor Data**<br>*(e.g., Hourly temperatures, Stock prices)* | `.interpolate()` | Gaps are sequential. If a sensor cuts out at 2:00 PM (70°F) and resumes at 4:00 PM (74°F), estimating 3:00 PM as 72°F is highly accurate. |
+
+---
+## 🪓 Eliminating Missing Data: `.dropna()`
+
+The `.dropna()` method removes any rows or columns that contain missing (`NaN`) values from your DataFrame. While filling missing data is often preferred, dropping records completely is the right choice when key identifiers (like a `User_ID` or a primary numeric metric) are missing entirely.
+
+### 1. The Default Behavior: Dropping Whole Rows
+By default, running `.dropna()` will drop **any row** that contains even a single missing value across any of its columns.
+
+```python
+# Drops any row if it has a NaN anywhere inside it
+df_cleaned = df.dropna()
+```
+### 2. Targeting Specific Columns (subset)
+Dropping an entire row just because a non-essential column (like Notes) is blank can accidentally destroy valuable data. Use the subset parameter to only drop rows if missing data is found in critical columns.
+```python
+# Only drop the row if 'Customer_ID' or 'Total_Sales' is missing
+df_cleaned = df.dropna(subset=['Customer_ID', 'Total_Sales'])
+```
+### 3. Dropping Whole Columns instead of Rows (axis=1)
+If a specific column is missing so much data that it is completely useless for analytics, you can drop the entire vertical column from your dataset.
+```python
+# Remove the entire column if it contains any NaN values
+df_cleaned = df.dropna(axis=1)
+
+# Alternative explicit syntax
+df_cleaned = df.dropna(axis='columns')
+```
+Advanced Example
+```python
+# Keep rows only if they have at least 3 columns with valid data, 
+# but completely ignore blanks inside the 'Internal_Notes' column.
+df.dropna(thresh=3, subset=['User_ID', 'Revenue', 'Signup_Date'], inplace=True)
+```
+---
+## 📊 Analyzing Categorical Distributions: `.value_counts()`
+
+The `.value_counts()` method counts the occurrences of unique values within a specific Series (column). It automatically sorts the results in descending order, making it incredibly easy to see the most frequent entries in your data instantly.
+
+### 1. Basic Usage (SQL-Style Grouping)
+By default, running this on a column will count every unique entry, ignoring missing (`NaN`) values.
+
+```python
+# See how many rows belong to each country
+df['born_country'].value_counts()
+```
+Example Output:
+```python
+# See how many rows belong to each country
+df['born_country'].value_counts()
+```
+### 2. Turning Counts into Percentages (normalize)
+If you want to see the relative frequency (percentages/proportions) of each category instead of the raw counts, set normalize=True.
+```python
+# Show the percentage distribution of countries (e.g., 0.54 = 54%)
+df['born_country'].value_counts(normalize=True)
+```
+### 3. Including Missing Values (dropna)
+By default, .value_counts() quietly skips over missing data. If you want to see how many rows are missing data compared to your valid categories, set dropna=False.
+```python
+# Show unique counts, including a dedicated line for missing (NaN) records
+df['born_country'].value_counts(dropna=False)
+```
+### 4. Grouping Continuous Data into Bins (bins)
+While .value_counts() is typically used for text columns, you can use the bins parameter to automatically slice continuous numbers (like ages or salaries) into discrete intervals. This is a quick way to build a text-based histogram.
+```python
+# Slice prices into 4 equal-sized mathematical ranges and count entries in each
+df['Price'].value_counts(bins=4)
+```
+Example Output 
+```python
+(9.99, 25.00]     450
+(25.00, 50.00]    120
+(50.00, 75.00]     35
+(75.00, 100.00]    12
+dtype: int64
+```
+---
+## 🗂️ Aggregating Data: `.groupby()`
+
+The `.groupby()` method allows you to group rows of data together based on one or more columns and run mathematical aggregations (like sum, mean, or count) on them. It mirrors the exact structural logic of a SQL `GROUP BY` statement.
+
+---
+
+### 🧱 The Split-Apply-Combine Workflow
+When you run a `.groupby()`, Pandas executes three distinct operations under the hood:
+1. **Split**: Separates the DataFrame into distinct mini-tables based on the column values you specified.
+2. **Apply**: Computes a statistical function (like `.mean()`) on each of those mini-tables.
+3. **Combine**: Melds the calculated metrics back together into a single, polished output table.
+
+### 1. Basic Single Aggregation
+To run a basic aggregation, specify the column to group by, the numerical column you want to measure, and the math function.
+
+```python
+# Group by country and calculate the average height of athletes
+df.groupby('born_country')['height_cm'].mean()
+```
+### 2. Multiple Aggregations at Once (.agg())
+If you want to calculate multiple different statistics for your columns simultaneously, pass a list of functions into the .agg() method.
+```python
+# Calculate min, max, and average age per country
+df.groupby('born_country')['age'].agg(['min', 'max', 'mean'])
+```
+### 3. Named Aggregations (Best Practice for Clean Column Names)
+By default, compiling multiple metrics can create messy, multi-layered headers (MultiIndex columns). You can use Named Aggregation to explicitly name your output columns right inside the function.
+```python
+# Group by country and create custom-named summary columns
+country_summary = df.groupby('born_country').agg(
+    total_athletes=('athlete_id', 'count'),
+    average_weight=('weight_kg', 'mean'),
+    max_height=('height_cm', 'max')
+)
+```
+--- 
+## 🧪 Advanced Aggregations: `.agg()`
+
+The `.agg()` method (short for aggregate) allows you to bypass the limitations of simple math functions and apply multiple, specific statistical calculations across your DataFrame columns simultaneously. 
+
+### 1. Applying Multiple Functions to a Single Column
+If you want to look at the spread of a single metric, pass a list of string functions (like `'min'`, `'max'`, `'mean'`, `'std'`, or `'count'`) directly into `.agg()`.
+
+```python
+# See the full mathematical spread of coffee prices
+df['Price'].agg(['min', 'max', 'mean', 'std'])
+```
+### 2. Multi-Column Aggregation (The Dictionary Method)
+To calculate completely different metrics for different columns at the same time, pass a Python dictionary ({ 'column' : 'function' }) into .agg().
+```python
+# Calculate Total Units Sold, but get the Average Price
+df.groupby('Coffee Type').agg({
+    'Units Sold': 'sum',
+    'Price': 'mean'
+})
+```
+### 3. Named Aggregations (The Gold Standard)
+When you apply multiple aggregations, Pandas naturally creates messy, stacked column headers (MultiIndex headers) that are a pain to filter later.
+Named Aggregation fixes this completely. It lets you assign clean, custom column names directly to your metrics right inside the function using the syntax: New_Column_Name=('Original_Column', 'Function').
+```python
+# Group by Coffee Type and generate a perfectly flat, clean summary table
+coffee_summary = df.groupby('Coffee Type').agg(
+    total_sales_volume=('Units Sold', 'sum'),
+    average_customer_spend=('Price', 'mean'),
+    unique_transactions=('Transaction_ID', 'count')
+)
+```
+### 📊 Aggregated Summary Table
+| Coffee Type | total_sales_volume | average_customer_spend | unique_transactions |
+| :--- | :---: | :---: | :---: |
+| **Espresso** | 740 | $3.50 | 210 |
+| **Latte** | 610 | $4.75 | 145 |
