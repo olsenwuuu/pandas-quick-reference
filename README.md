@@ -670,3 +670,88 @@ df['Cumulative_Type_Revenue'] = df.groupby('Coffee Type')['Revenue'].cumsum()
 | 2026-05-01 | **Latte** | $150 | **$150** |
 | 2026-05-02 | **Espresso** | $120 | **$220** *(100 + 120)* |
 | 2026-05-02 | **Latte** | $130 | **$280** *(150 + 130)* |
+---
+
+## 🔍 Finding Index Locations: `.idxmax()` and `.idxmin()`
+
+When analyzing datasets, we frequently need to find the specific row identifier (index) where a maximum or minimum value occurs—such as finding the highest-priced product or the earliest transaction timestamp. 
+
+While `.max()` returns the **value** itself, `.idxmax()` returns the **label of the index** where that maximum value resides. 
+
+#### 🛠️ How it Works
+
+* **`df['column'].idxmax()`**: Returns the single index label of the maximum value in a Series.
+* **`df['column'].idxmin()`**: Returns the single index label of the minimum value in a Series.
+
+#### 💡 Real-World Example
+Imagine you are analyzing a dataset of wine reviews and want to find the exact row entry for the highest-rated wine in the dataset to inspect its details.
+
+```python
+import pandas as pd
+
+# Sample Data
+data = {
+    'wine_name': ['Classic Chardonnay', 'Reserve Cabernet', 'Old Vine Zinfandel'],
+    'points': [88, 96, 91]
+}
+df = pd.DataFrame(data)
+
+# 1. Find the index label of the maximum points
+highest_points_index = df['points'].idxmax()
+print(f"The highest score is at index: {highest_points_index}")
+# Output: The highest score is at index: 1
+
+# 2. Use .loc to extract the complete record for that index
+best_wine_record = df.loc[highest_points_index]
+print(best_wine_record)
+# Output:
+# wine_name    Reserve Cabernet
+# points                     96
+# Name: 1, dtype: object
+```
+---
+## 🔄 Custom Row-by-Row Transformations: `.apply()`
+
+While Pandas has highly optimized built-in functions for standard operations, real-world data pipelines often require complex, custom conditional logic that standard methods cannot handle. For these scenarios, `.apply()` serves as the ultimate tool for executing custom Python functions across a dataset.
+
+#### 🛠️ How it Works
+
+When you use `.apply()` with a custom function and set `axis='columns'` (or `axis=1`), Pandas acts like a loop running through the DataFrame horizontally. 
+
+* **The `row` Argument:** Inside the custom function, the argument (typically named `row`) represents a single, individual record from the dataset structured as a Pandas Series. You can access any column value for that specific record using dot notation (e.g., `row.column_name`).
+* **The Execution:** Pandas passes each row into the function one at a time, waits for it to evaluate and return a value, records that value, and moves to the next row.
+
+#### 💡 Real-World Example
+Imagine you want to assign a custom tier rating to wines based on complex, multi-layered conditions involving both the country of origin and their review points.
+
+```python
+import pandas as pd
+
+# Sample Data
+data = {
+    'country': ['Canada', 'Italy', 'USA', 'France'],
+    'points': [82, 96, 88, 91]
+}
+df = pd.DataFrame(data)
+
+# 1. Define the custom evaluation logic for a single row
+def calculate_stars(row):
+    if row.country == 'Canada':
+        return 3
+    elif row.points >= 95:
+        return 3
+    elif row.points >= 85:
+        return 2
+    else:
+        return 1
+
+# 2. Use .apply() to run the function row-by-row across the DataFrame
+df['star_rating'] = df.apply(calculate_stars, axis='columns')
+
+print(df)
+# Output:
+#   country  points  star_rating
+# 0  Canada      82            3
+# 1   Italy      96            3
+# 2     USA      88            2
+# 3  France      91            2
