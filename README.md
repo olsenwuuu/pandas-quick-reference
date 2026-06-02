@@ -755,3 +755,36 @@ print(df)
 # 1   Italy      96            3
 # 2     USA      88            2
 # 3  France      91            2
+```
+---
+### 📊 Aggregating Group Frequencies: `.size()`
+
+When performing data aggregation, we frequently need to know the total number of records that belong to each category—such as counting how many wine reviews exist per country or per winery. In Pandas, chaining `.size()` after a `.groupby()` operation is the most efficient way to generate these frequency counts.
+
+#### 🛠️ How it Works
+
+* **The Operation:** `.groupby('column').size()` splits the data by unique categories, counts the total number of rows (including missing/null data) in each group, and returns a clean, aggregated Series.
+* **The SQL Equivalent:** This is the exact functional equivalent of using `COUNT(*)` paired with a `GROUP BY` clause in SQL.
+
+#### 💡 Code Example
+
+```python
+import pandas as pd
+import numpy as np
+
+# Sample Data with a missing (NaN) value
+data = {
+    'winery': ['1+1=3', '10 Knots', '1+1=3', '10 Knots', '1+1=3'],
+    'points': [88, 92, np.nan, 85, 90]
+}
+df = pd.DataFrame(data)
+
+# Calculate total review count per winery
+winery_counts = df.groupby('winery').size()
+
+print(winery_counts)
+# Output:
+# winery
+# 1+1=3      3
+# 10 Knots    2
+# dtype: int64
