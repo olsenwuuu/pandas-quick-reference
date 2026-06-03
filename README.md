@@ -788,3 +788,31 @@ print(winery_counts)
 # 1+1=3      3
 # 10 Knots    2
 # dtype: int64
+```
+---
+### 🏷️ Renaming Columns and Indexes (`.rename()`)
+
+The `.rename()` method changes specific column headers or row index labels by passing a dictionary mapping the old names to the new names. 
+
+#### 1. Renaming Columns
+To alter column headers, use the `columns` parameter. This is highly useful for cleaning up raw data formatting or making business metrics explicit.
+
+```python
+# Rename specific columns for clarity
+df_renamed_cols = reviews.rename(columns={
+    'points': 'score',
+    'region_1': 'region',
+    'region_2': 'sub_region'
+})
+```
+---
+### 🗂️ Establishing Row Identifiers (`.set_index()`)
+
+The `.set_index()` method allows you to promote one or more existing columns to become the primary row index of a DataFrame. This replaces the default numeric sequence (`0, 1, 2...`) with meaningful unique identifiers, which simplifies slicing, joining, and data alignment operations.
+
+#### 1. Setting a Single Index Column
+This is the standard approach for assigning a primary business key (such as a transaction ID, date, or unique product code) as the row anchor.
+
+```python
+# Convert the 'title' column into the primary row index
+df_with_index = reviews.set_index('title')
