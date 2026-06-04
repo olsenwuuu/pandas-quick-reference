@@ -869,3 +869,15 @@ df_master.to_sql('stg_streaming_activity', conn, if_exists='replace', index=Fals
 # Always close the gate when you are done writing data
 conn.close()
 ```
+---
+### (`display()`)
+
+* **Definition:** A specialized IPython function designed for Jupyter Notebooks and VS Code that renders objects—like Pandas DataFrames—into highly formatted, interactive, and human-readable HTML structures instead of raw text.
+* **Use Case:** Use this inside notebooks whenever you want to inspect a DataFrame, plot, or matrix with clean grid lines and readable alignment. It is especially useful when you need to output multiple distinct tables or data summaries from the exact same notebook code cell.
+* **Code Example:**
+  ```python
+  import pandas as pd
+
+  # Run a query and display the resulting DataFrame beautifully
+  df_sample = pd.read_sql_query("SELECT * FROM stg_streaming_activity LIMIT 5;", conn)
+  display(df_sample)
