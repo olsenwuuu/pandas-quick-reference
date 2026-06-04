@@ -881,3 +881,14 @@ conn.close()
   # Run a query and display the resulting DataFrame beautifully
   df_sample = pd.read_sql_query("SELECT * FROM stg_streaming_activity LIMIT 5;", conn)
   display(df_sample)
+---
+### Querying Data via SQL (`pd.read_sql_query()`)
+
+* **Definition:** A Pandas function that executes a standard SQL query string against a relational database and instantly packages the resulting rows and columns back into a Pandas DataFrame.
+* **Use Case:** Use this whenever you want to leverage the speed and filtering power of SQL directly inside Python. It lets you aggregate, filter, and join massive database tables on the database side before pulling a smaller, optimized subset of data into your notebook.
+* **Code Example:**
+```python
+# Run a SQL query and save the results into a DataFrame
+query = "SELECT * FROM stg_streaming_activity LIMIT 5;"
+df_sample = pd.read_sql_query(query, conn)
+```
