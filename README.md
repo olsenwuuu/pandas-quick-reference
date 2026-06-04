@@ -816,3 +816,56 @@ This is the standard approach for assigning a primary business key (such as a tr
 ```python
 # Convert the 'title' column into the primary row index
 df_with_index = reviews.set_index('title')
+```
+---
+### 🧠 Concept: Automated Directory Creation (`os.makedirs()`)
+
+* **Definition:** A specific command within Python's `os` library that forces your computer to create a new folder (or a chain of folders) directly from your script.
+* **Use Case:** Use this at the very beginning of an ingestion or cleaning script to ensure the destination folders exist. Including `exist_ok=True` ensures that if the folder is already there, Python quietly skips it instead of throwing a disruptive error. This makes your pipeline completely self-healing on any computer.
+* **Code Example:**
+  ```python
+  import os
+  
+  # Automatically creates 'processed' inside 'data' if it doesn't exist
+  os.makedirs('../data/processed', exist_ok=True)
+---
+### 🧠 Concept: Data Export Alignment (`.to_csv()`)
+
+* **Definition:** A Pandas method that converts an in-memory DataFrame into a physical, permanent CSV spreadsheet file on your storage disk.
+* **Use Case:** Use this at the end of a cleaning or transformation phase to "freeze" your progress and save the clean data for the next step of the pipeline. Always pair this with index=False so Pandas doesn't inject useless row numbers into your clean file.
+* **Code Example:**
+```python
+# Saves the master data cleanly without row-number bloat
+df_master.to_csv('../data/processed/clean_streaming_activity.csv', index=False)
+```
+---
+### Database Connection (`sqlite3.connect()`)
+
+* **Definition:** A method that establishes a digital pipeline (or "bridge") between your Python notebook and a specific relational database file. 
+* **Use Case:** Use this whenever you need to read from or write to a database. If the database file name you pass into it doesn't exist yet, SQLite will automatically create a blank database file for you on the spot.
+* **Code Example:**
+  ```python
+  import sqlite3
+  
+  # Connects to the database (and creates it if it's missing)
+  conn = sqlite3.connect('../data/streaming_warehouse.db')
+
+### Table Creation & Population (`.to_sql()`)
+
+* **Definition:** A Pandas method that takes an in-memory DataFrame and converts it directly into a structured table inside a relational database. 
+* **Use Case:** Use this to move data out of Python and into your storage warehouse. Setting if_exists='replace' tells the script to overwrite the table if it already exists, which keeps your script from crashing on a second run. Setting index=False prevents Pandas from turning its row numbers into a database column.
+* **Code Example:**
+```python
+# Pushes df_master into a SQL table named 'stg_streaming_activity'
+df_master.to_sql('stg_streaming_activity', conn, if_exists='replace', index=False)
+```
+
+### Connection Closure (`.close()`)
+
+* **Definition:** A command that officially shuts down the active digital pipeline between your Python notebook and the database file.
+* **Use Case:** Use this at the very end of your database scripts. Leaving connections open can lock the database file, preventing other tools (like dbt or SQL viewers) from accessing the data, and it can waste system memory.
+* **Code Example:**
+```python
+# Always close the gate when you are done writing data
+conn.close()
+```
